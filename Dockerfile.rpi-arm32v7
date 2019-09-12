@@ -14,6 +14,7 @@ RUN install_packages \
       libatlas-base-dev \
       libavcodec-dev \
       libavformat-dev \
+      libavutil-dev \
       libglib2.0-dev \
       libjpeg-dev \
       libpng-dev \
@@ -57,13 +58,18 @@ RUN [ "cross-build-start" ]
 
 RUN install_packages \
       ffmpeg \
+      libatlas3-base \
       libavcodec58 \
       libavformat58 \
       libavutil56 \
-      libglib2.0-dev \
+      libglib2.0-0 \
       libjpeg62-turbo \
       libpng16-16 \
       libswscale5 \
+      libtiff5 \
+      libv4l-0 \
+      libx264-155 \
+      libxvidcore4 \
       python3 \
       python3-numpy \
       python3-pip \
