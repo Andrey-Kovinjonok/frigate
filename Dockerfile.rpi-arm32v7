@@ -2,11 +2,12 @@
 # OpenCV Builder
 #
 
-FROM balenalib/raspberrypi3-debian:buster-build as opencv-builder
+FROM balenalib/raspberrypi3-debian:buster-run as opencv-builder
 
 RUN [ "cross-build-start" ]
 
 RUN install_packages \
+      build-essential \
       cmake \
       ffmpeg \
       git \
@@ -30,13 +31,19 @@ RUN install_packages \
       python3-numpy \
       python3-packaging \
       python3-pyparsing \
-      python3-six
+      python3-setuptools \
+      python3-six \
+      python3-wheel
 
 # Build Python wheel
 RUN cd /tmp \
- && git clone --branch=24 --depth=50 https://github.com/skvark/opencv-python \
- && cd opencv-python \
- && ENABLE_HEADLESS=1 python3 setup.py bdist_wheel
+ #&& git clone --branch=24 --depth=50 https://github.com/skvark/opencv-python \
+ && git clone https://github.com/skvark/opencv-python && cd opencv-python \
+ # Checkout release 4.0.1
+ && git checkout 24 \
+ # Enable CMAKE_ARGS build arg (merged into release 26)
+ && git cherry-pick -n 4b191f860257297be04e57213b0d981bcfb9a841 \
+ && ENABLE_HEADLESS=1 CMAKE_ARGS="-DENABLE_NEON=ON -DENABLE_VFPV3=ON" python3 setup.py bdist_wheel
 
 RUN [ "cross-build-end" ]
 
