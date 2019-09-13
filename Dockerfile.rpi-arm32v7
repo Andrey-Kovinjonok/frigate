@@ -1,13 +1,14 @@
+# syntax=docker/dockerfile:experimental
+
 #
 # OpenCV Builder
 #
 
 FROM balenalib/raspberrypi3-debian:buster-run as opencv-builder
 
-RUN [ "cross-build-start" ]
-
 RUN install_packages \
       build-essential \
+      ccache \
       cmake \
       ffmpeg \
       git \
@@ -43,18 +44,18 @@ RUN cd /tmp \
  # Checkout release 4.0.1
  && git checkout 24 \
  # Enable CMAKE_ARGS build arg (merged into release 26)
- && git cherry-pick -n 4b191f860257297be04e57213b0d981bcfb9a841 \
- && ENABLE_HEADLESS=1 CMAKE_ARGS="-DENABLE_NEON=ON -DENABLE_VFPV3=ON" python3 setup.py bdist_wheel
+ && git cherry-pick -n 4b191f860257297be04e57213b0d981bcfb9a841
 
-RUN [ "cross-build-end" ]
+# This is quite slow because setup.py only compiles with a single process.
+# Consider reverting back to manual compiling.
+RUN --mount=type=cache,target=/root/.ccache cd /tmp/opencv-python \
+ && ENABLE_HEADLESS=1 CMAKE_ARGS="-DENABLE_NEON=ON -DENABLE_VFPV3=ON" python3 setup.py bdist_wheel
 
 #
 # Frigate App Builder
 #
 
 FROM balenalib/raspberrypi3-debian:buster-run as app
-
-RUN [ "cross-build-start" ]
 
 RUN install_packages \
       ffmpeg \
@@ -116,8 +117,6 @@ RUN wget https://dl.google.com/coral/canned_models/coco_labels.txt -O /label_map
 RUN apt-get autoremove -y \
  && apt-get autoclean -y \
  && rm -rf /tmp/*
-
-RUN [ "cross-build-end" ]
 
 WORKDIR /opt/frigate/
 ADD frigate frigate/
