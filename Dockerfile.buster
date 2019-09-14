@@ -72,9 +72,9 @@ RUN --mount=type=cache,target=/root/.ccache cd /tmp/opencv-python \
 
 FROM debian:buster-slim as app
 
-ARG DEBIAN_FRONTEND=noninteractive
+ARG TARGETARCH
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y --no-install-recommends \
       ffmpeg \
       libatlas3-base \
       libavcodec58 \
@@ -107,7 +107,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3-paho-mqtt \
       python3-yaml \
  # VAAPI drivers for Intel hardware accel
- && if [ "$TARGETARCH" = "amd64"]; then apt-get install -y --no-install-recommends libva-drm2 libva2 i965-va-driver vainfo; fi \
+ && if [ "$TARGETARCH" = "amd64"]; then DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libva-drm2 libva2 i965-va-driver vainfo; fi \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /tmp
