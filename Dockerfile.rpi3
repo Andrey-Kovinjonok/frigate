@@ -1,7 +1,5 @@
 FROM balenalib/raspberrypi3-debian:buster-run
 
-ARG DEBIAN_FRONTEND=noninteractive
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ffmpeg \
       python3 \
@@ -17,19 +15,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libjasper1 \
       libopenexr23 \
       libatlas3-base \
-      # Coral USB Python API Dependencies
-      libc++1 \
-      libc++abi1 \
-      libgcc1 \
-      libunwind8 \
-      libusb-1.0-0 \
-      python3-numpy \
-      python3-pil \
       # Frigate Dependencies
       python3-flask \
+      python3-matplotlib \
+      python3-numpy \
       python3-paho-mqtt \
-      python3-yaml \
- && rm -rf /var/lib/apt/lists/*
+      python3-yaml
 
 # Configure arm wheels
 COPY pip.conf /etc/pip.conf
@@ -38,21 +29,21 @@ COPY pip.conf /etc/pip.conf
 # 4.1.1.26 is currently broken: https://github.com/piwheels/packages/issues/59
 RUN pip3 install opencv-python-headless==4.1.0.25
 
-# Download and install EdgeTPU libraries for Coral
-RUN cd /tmp && wget -q -O- https://dl.google.com/coral/edgetpu_api/edgetpu_api_latest.tar.gz | tar -xz
-
-WORKDIR /tmp/edgetpu_api
-COPY scripts/install_edgetpu_api.sh install.sh
-RUN /bin/bash install.sh
-
-# Python 3.7 workaround
-RUN cd /usr/local/lib/python3.7/dist-packages/edgetpu/swig/ \
- && cp _edgetpu_cpp_wrapper.cpython-35m-arm-linux-gnueabihf.so _edgetpu_cpp_wrapper.cpython-37m-arm-linux-gnueabihf.so
+# Install EdgeTPU libraries for Coral
+RUN export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn \
+ && curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+RUN echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" > /etc/apt/sources.list.d/coral-edgetpu.list
+RUN export DEBIAN_FRONTEND=noninteractive \
+ && apt-get update \
+ && echo libedgetpu1-max libedgetpu/accepted-eula select true | debconf-set-selections \
+ && apt-get install -y --no-install-recommends \
+      libedgetpu1-max \
+      python3-edgetpu
 
 # Minimize image size
 RUN apt-get autoremove -y \
  && apt-get autoclean -y \
- && rm -rf /tmp/*
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/frigate/
 
